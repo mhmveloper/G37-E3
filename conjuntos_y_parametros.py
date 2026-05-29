@@ -86,8 +86,3 @@ class Parametros:
 
         self.h_ji = [value_vector for value_vector in dataGetter.get_table_values("Penalizacion_biomasa_residual", "C", conjuntos.j) if value_vector is not None]
         '''Penalización por kg de biomasa residual tipo j remanente en la zona i (ponderada por el riesgo de incendio de la zona respectiva)'''
-
-        # Escalar
-
-        #self.R_min = dataGetter.get_cell_value("Parametros", "R_min") (ELIMINADA)
-        #'''Nivel mínimo de reducción del riesgo total.'''

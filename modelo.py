@@ -1,5 +1,6 @@
 import gurobipy as gp
 from conjuntos_y_parametros import Conjuntos, Parametros
+from pathlib import Path
 
 model = gp.Model("E3")
 conjuntos = Conjuntos()
@@ -571,3 +572,32 @@ Ejecución de optimización
 '''
 
 model.optimize()
+
+
+'''
+Guardado de resultados
+'''
+
+output_path = Path(__file__).with_name("resultados_variables.txt")
+
+if model.SolCount > 0:
+    with output_path.open("w", encoding="utf-8") as f:
+        for nombre, vars_dict in [
+            ("X", X),
+            ("Y", Y),
+            ("I", I),
+            ("A", A),
+            ("Q", Q),
+            ("F", F),
+            ("Z", Z),
+            ("H", H),
+            ("D", D),
+            ("W", W),
+        ]:
+            f.write(f"{nombre}\n")
+            for key, var in vars_dict.items():
+                f.write(f"{key}: {var.X}\n")
+            f.write("\n")
+else:
+    with output_path.open("w", encoding="utf-8") as f:
+        f.write("No feasible solution found.\n")
