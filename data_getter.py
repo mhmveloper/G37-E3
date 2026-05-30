@@ -1,6 +1,5 @@
 from pathlib import Path
 from openpyxl import load_workbook
-from math import ceil
 
 
 class DataGetter:
@@ -31,18 +30,6 @@ class DataGetter:
             print(f"Error al leer la columna '{col}' en la hoja '{sheet_name}': {e}")
             return []
 
-    '''
-    def get_cell_value(self, sheet_name: str, cell: str):
-        Obtiene el valor de una celda específica.
-        try:
-            return self.wb[sheet_name][cell].value
-        except KeyError:
-            print(f"Error: La hoja '{sheet_name}' no existe en el archivo '{self.xlsx_path}'.")
-            return None
-        except Exception as e:
-            print(f"Error al leer la celda '{cell}' en la hoja '{sheet_name}': {e}")
-            return None
-    '''
     def get_table_values(self, sheet_name: str, col: str, *parameters):
         '''
         Obtiene los valores de una columna específica, la cual es luego dividida en segmentos según los parámetros dados.

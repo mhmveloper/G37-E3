@@ -3,7 +3,7 @@ from data_getter import DataGetter
 
 # Preparación de datos
 
-dataPath = "datos/data.xlsx" # Cambiar por el archivo que contiene los datos
+dataPath = "datos.xlsx"
 dataGetter = DataGetter(dataPath)
 
 class Conjuntos:
@@ -37,9 +37,6 @@ class Parametros:
         self.Cap_k = [value for value in dataGetter.get_column_values("capacidad_máxima", "B") if value is not None]
         '''Capacidad máxima mensual de procesamiento de una chipeadora de tipo k.'''
 
-        #self.eta_f = [value for value in dataGetter.get_column_values("Parametros", "eta_f") if value is not None]
-        #'''Pérdida de eficiencia asociada a una falla tipo f.'''
-
         self.TT_i = [value for value in dataGetter.get_column_values("Cantidad_de_trabajadores_disp", "B") if value is not None]
         '''Cantidad de trabajadores disponibles inicialmente en la zona i.'''
 
@@ -48,9 +45,6 @@ class Parametros:
 
         self.L_i = [value for value in dataGetter.get_column_values("Biomasa_final_horizonte", "B") if value is not None]
         '''Nivel máximo permitido de biomasa residual total al final del horizonte en la zona i.'''
-
-        #self.rho_i = [value for value in dataGetter.get_column_values("Parametros", "rho_i") if value is not None] (ELIMINADA)
-        #'''Índice de riesgo de incendio en la zona i.'''
 
         # Tablas / matrices / tensores (multi-índice)
 
