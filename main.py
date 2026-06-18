@@ -1,6 +1,9 @@
 import gurobipy as gp
 from conjuntos_y_parametros import Conjuntos, Parametros
 from pathlib import Path
+import ast
+import pandas as pd
+import matplotlib.pyplot as plt
 
 model = gp.Model("E3")
 conjuntos = Conjuntos()
@@ -431,27 +434,28 @@ R10a = model.addConstrs(
         for i in conjuntos.i
         for f in conjuntos.f
     ),
-    name="FallasEsperadasPorUso"
+    name="FallasEsperadasPorUso_inicial_1"
 ) if restricciones_activas[10] else None
 
 R10b = model.addConstrs(
     (
         F[k, i, 1, f]
-        <
+        <=
         (
             parametros.alpha_kf[k-1][f-1]
             *
             X[k, i, 1]
             +
-            1
+            0.9999999
         )
 
         for k in conjuntos.k
         for i in conjuntos.i
         for f in conjuntos.f
     ),
-    name="FallasEsperadasPorUso"
+    name="FallasEsperadasPorUso_inicial_2"
 ) if restricciones_activas[10] else None
+
 R10c = model.addConstrs(
     (
         F[k, i, t, f]
@@ -475,13 +479,13 @@ R10c = model.addConstrs(
         for t in conjuntos.t
         for f in conjuntos.f if t != 1
     ),
-    name="FallasEsperadasPorUso"
+    name="FallasEsperadasPorUso_general_1"
 ) if restricciones_activas[10] else None
 
 R10d = model.addConstrs(
     (
         F[k, i, t, f]
-        <
+        <=
         (
             parametros.alpha_kf[k-1][f-1]
             *
@@ -495,7 +499,7 @@ R10d = model.addConstrs(
                 )
             )
             +
-            1
+            0.9999999
         )
 
         for k in conjuntos.k
@@ -503,7 +507,7 @@ R10d = model.addConstrs(
         for t in conjuntos.t
         for f in conjuntos.f if t != 1
     ),
-    name="FallasEsperadasPorUso"
+    name="FallasEsperadasPorUso_general_2"
 ) if restricciones_activas[10] else None
 '''
 La cantidad de fallas nuevas consideradas debe ser al menos el número esperado de fallas, estimado a partir de la probabilidad de falla y la cantidad de chipeadoras operativas.
