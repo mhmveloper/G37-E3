@@ -727,28 +727,40 @@ def generar_graficos_desde_txt(ruta_txt: Path):
     plt.close()
 
     # ==========================
-    # 2. Trabajadores desvinculados por región
+    # 2. Trabajadores contratados y desvinculados por región
     # ==========================
 
+    contratados_zona = []
     desvinculados_zona = []
 
     for i in conjuntos.i:
-        total_zona = sum(
+        total_cont = sum(
+            valor
+            for (ii, t), valor in resultados["H"].items()
+            if ii == i
+        )
+        total_desv = sum(
             valor
             for (ii, t), valor in resultados["D"].items()
             if ii == i
         )
-        desvinculados_zona.append(total_zona)
+        contratados_zona.append(total_cont)
+        desvinculados_zona.append(total_desv)
 
     plt.figure(figsize=(8, 4.8))
-    plt.bar([zonas[i] for i in conjuntos.i], desvinculados_zona)
-    plt.title("Trabajadores desvinculados totales por región")
+    x = np.arange(len(conjuntos.i))
+    width = 0.35
+    plt.bar(x - width/2, contratados_zona, width, label="Contratados", color="steelblue")
+    plt.bar(x + width/2, desvinculados_zona, width, label="Desvinculados", color="indianred")
+    plt.title("Trabajadores contratados y desvinculados totales por región")
     plt.xlabel("Región")
-    plt.ylabel("Trabajadores desvinculados")
-    plt.xticks(rotation=20, ha="right")
+    plt.ylabel("Trabajadores")
+    plt.xticks(ticks=x, labels=[zonas[i] for i in conjuntos.i], rotation=20, ha="right")
+    plt.legend()
     plt.tight_layout()
     plt.savefig(carpeta / "desvinculados.png", dpi=300)
     plt.close()
+
 
     # ==========================
     # 3. Asignación mensual de chipeadoras por zona (mapa de calor)
