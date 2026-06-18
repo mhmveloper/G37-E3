@@ -383,8 +383,6 @@ R9a = model.addConstrs(
         ==
         (
             F[k, i, 1, f]
-            -
-            Q[k, i, 1, f]
         )
 
         for k in conjuntos.k
@@ -394,8 +392,7 @@ R9a = model.addConstrs(
     name="DinamicaFallas_t1"
 ) if restricciones_activas[9] else None
 '''
-La cantidad de fallas pendientes de reparación al final de cada período depende de las fallas pendientes del periodo anterior, las fallas nuevas ocurridas y las reparaciones arregladas.
-'''
+La cantidad de chipeadoras con fallas pendientes de reparación al final de cada período depende de las chipeadoras con fallas pendientes del periodo anterior, las chipeadoras con fallas nuevas ocurridas durante el mes y las chipeadoras arregladas.'''
 
 R9b = model.addConstrs(
     (
@@ -422,17 +419,16 @@ La cantidad de fallas pendientes de reparación al final de cada período depend
 
 R10a = model.addConstrs(
     (
-        F[k, i, t, f]
+        F[k, i, 1, f]
         >=
         (
             parametros.alpha_kf[k-1][f-1]
             *
-            X[k, i, t]
+            X[k, i, 1]
         )
 
         for k in conjuntos.k
         for i in conjuntos.i
-        for t in conjuntos.t
         for f in conjuntos.f
     ),
     name="FallasEsperadasPorUso"
@@ -440,12 +436,64 @@ R10a = model.addConstrs(
 
 R10b = model.addConstrs(
     (
-        F[k, i, t, f]
-        <=
+        F[k, i, 1, f]
+        <
         (
             parametros.alpha_kf[k-1][f-1]
             *
-            X[k, i, t]
+            X[k, i, 1]
+            +
+            1
+        )
+
+        for k in conjuntos.k
+        for i in conjuntos.i
+        for f in conjuntos.f
+    ),
+    name="FallasEsperadasPorUso"
+) if restricciones_activas[10] else None
+R10c = model.addConstrs(
+    (
+        F[k, i, t, f]
+        >=
+        (
+            parametros.alpha_kf[k-1][f-1]
+            *
+            (
+                X[k, i, t]
+                -
+                gp.quicksum(
+                    A[k, i, t-1, f_prime]
+
+                    for f_prime in conjuntos.f
+                )
+            )
+        )
+
+        for k in conjuntos.k
+        for i in conjuntos.i
+        for t in conjuntos.t
+        for f in conjuntos.f if t != 1
+    ),
+    name="FallasEsperadasPorUso"
+) if restricciones_activas[10] else None
+
+R10d = model.addConstrs(
+    (
+        F[k, i, t, f]
+        <
+        (
+            parametros.alpha_kf[k-1][f-1]
+            *
+            (
+                X[k, i, t]
+                -
+                gp.quicksum(
+                    A[k, i, t-1, f_prime]
+
+                    for f_prime in conjuntos.f
+                )
+            )
             +
             1
         )
@@ -453,7 +501,7 @@ R10b = model.addConstrs(
         for k in conjuntos.k
         for i in conjuntos.i
         for t in conjuntos.t
-        for f in conjuntos.f
+        for f in conjuntos.f if t != 1
     ),
     name="FallasEsperadasPorUso"
 ) if restricciones_activas[10] else None
@@ -464,8 +512,8 @@ La cantidad de fallas nuevas consideradas debe ser al menos el número esperado 
 R11a = model.addConstrs(
     (
         Q[k, i, 1, f]
-        <=
-        F[k, i, 1, f]
+        ==
+        0
 
         for k in conjuntos.k
         for i in conjuntos.i
@@ -483,8 +531,6 @@ R11b = model.addConstrs(
         <=
         (
             A[k, i, t-1, f]
-            +
-            F[k, i, t, f]
         )
 
         for k in conjuntos.k
