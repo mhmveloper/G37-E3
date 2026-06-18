@@ -4,6 +4,7 @@ from pathlib import Path
 import ast
 import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
 
 model = gp.Model("E3")
 conjuntos = Conjuntos()
@@ -651,3 +652,148 @@ if model.SolCount > 0:
 else:
     with output_path.open("w", encoding="utf-8") as f:
         f.write("No feasible solution found.\n")
+
+
+def leer_resultados_txt(ruta_txt: Path) -> dict:
+    resultados = {}
+    variable_actual = None
+
+    with ruta_txt.open("r", encoding="utf-8") as archivo:
+        for linea in archivo:
+            linea = linea.strip()
+
+            if not linea:
+                continue
+
+            if linea in ["X", "Y", "I", "A", "Q", "F", "Z", "H", "D", "W"]:
+                variable_actual = linea
+                resultados[variable_actual] = {}
+                continue
+
+            if variable_actual is not None and ":" in linea:
+                key_txt, valor_txt = linea.split(":", 1)
+                key = ast.literal_eval(key_txt.strip())
+                valor = float(valor_txt.strip())
+                resultados[variable_actual][key] = valor
+
+    return resultados
+
+
+def generar_graficos_desde_txt(ruta_txt: Path):
+    resultados = leer_resultados_txt(ruta_txt)
+
+    meses = {
+        1: "mayo", 2: "junio", 3: "julio", 4: "agosto",
+        5: "septiembre", 6: "octubre", 7: "noviembre", 8: "diciembre",
+        9: "enero", 10: "febrero", 11: "marzo", 12: "abril"
+    }
+
+    zonas = {
+        1: "Región del Maule",
+        2: "Región del Biobío",
+        3: "Región de la Araucanía"
+    }
+
+    carpeta = Path(__file__).with_name("graficos_resultados")
+    carpeta.mkdir(exist_ok=True)
+
+    # ==========================
+    # 1. Biomasa procesada por mes
+    # ==========================
+
+    biomasa_mes = []
+
+    for t in conjuntos.t:
+        total_mes = sum(
+            valor
+            for (j, i, tt), valor in resultados["Y"].items()
+            if tt == t
+        )
+        biomasa_mes.append(total_mes / 1_000_000)
+
+    plt.figure(figsize=(9, 4.8))
+    plt.plot([meses[t] for t in conjuntos.t], biomasa_mes, marker="o")
+    plt.title("Biomasa residual procesada durante el horizonte de planificación")
+    plt.xlabel("Mes")
+    plt.ylabel("Millones de kg procesados")
+    plt.xticks(rotation=35, ha="right")
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.savefig(carpeta / "biomasa-procesada.png", dpi=300)
+    plt.close()
+
+    # ==========================
+    # 2. Trabajadores desvinculados por región
+    # ==========================
+
+    desvinculados_zona = []
+
+    for i in conjuntos.i:
+        total_zona = sum(
+            valor
+            for (ii, t), valor in resultados["D"].items()
+            if ii == i
+        )
+        desvinculados_zona.append(total_zona)
+
+    plt.figure(figsize=(8, 4.8))
+    plt.bar([zonas[i] for i in conjuntos.i], desvinculados_zona)
+    plt.title("Trabajadores desvinculados totales por región")
+    plt.xlabel("Región")
+    plt.ylabel("Trabajadores desvinculados")
+    plt.xticks(rotation=20, ha="right")
+    plt.tight_layout()
+    plt.savefig(carpeta / "desvinculados.png", dpi=300)
+    plt.close()
+
+    # ==========================
+    # 3. Asignación mensual de chipeadoras por zona (mapa de calor)
+    # ==========================
+
+    # Build a matrix: rows = zonas, columns = meses
+    heatmap_data = []
+    for i in conjuntos.i:
+        fila = []
+        for t in conjuntos.t:
+            total_zona_mes = sum(
+                valor
+                for (k, ii, tt), valor in resultados["X"].items()
+                if ii == i and tt == t
+            )
+            fila.append(total_zona_mes)
+        heatmap_data.append(fila)
+
+    heatmap_array = np.array(heatmap_data)
+
+    plt.figure(figsize=(9, 4.8))
+    im = plt.imshow(heatmap_array, cmap="YlOrRd", aspect="auto")
+
+    # Add text annotations in each cell
+    for i in range(heatmap_array.shape[0]):
+        for t in range(heatmap_array.shape[1]):
+            plt.text(t, i, str(int(heatmap_array[i, t])),
+                     ha="center", va="center",
+                     color="black" if heatmap_array[i, t] < heatmap_array.max() * 0.7 else "white")
+
+    plt.xticks(
+        ticks=range(len(conjuntos.t)),
+        labels=[meses[t] for t in conjuntos.t],
+        rotation=35, ha="right"
+    )
+    plt.yticks(
+        ticks=range(len(conjuntos.i)),
+        labels=[zonas[i] for i in conjuntos.i]
+    )
+    plt.title("Asignación mensual de chipeadoras por zona (mapa de calor)")
+    plt.xlabel("Mes")
+    plt.ylabel("Zona")
+    plt.colorbar(im, label="Cantidad de chipeadoras asignadas")
+    plt.tight_layout()
+    plt.savefig(carpeta / "asignacion-chipeadoras.png", dpi=300)
+    plt.close()
+
+    print("Gráficos generados correctamente en:", carpeta)
+
+
+if model.SolCount > 0:
+    generar_graficos_desde_txt(output_path)
