@@ -387,6 +387,8 @@ R9a = model.addConstrs(
         ==
         (
             F[k, i, 1, f]
+            -
+            Q[k, i, 1, f]
         )
 
         for k in conjuntos.k
@@ -517,8 +519,8 @@ La cantidad de fallas nuevas consideradas debe ser al menos el número esperado 
 R11a = model.addConstrs(
     (
         Q[k, i, 1, f]
-        ==
-        0
+        <=
+        F[k, i, 1, f]
 
         for k in conjuntos.k
         for i in conjuntos.i
@@ -527,7 +529,7 @@ R11a = model.addConstrs(
     name="ReparacionesFactibles_t1"
 ) if restricciones_activas[11] else None
 '''
-La cantidad de fallas reparadas en cada período no puede superar las fallas nuevas ni aquellas pendientes de reparación de períodos anteriores.
+La cantidad de fallas reparadas en cada período no puede superar las fallas disponibles (nuevas + pendientes de reparación de períodos anteriores).
 '''
 
 R11b = model.addConstrs(
@@ -536,6 +538,8 @@ R11b = model.addConstrs(
         <=
         (
             A[k, i, t-1, f]
+            +
+            F[k, i, t, f]
         )
 
         for k in conjuntos.k
@@ -546,7 +550,7 @@ R11b = model.addConstrs(
     name="ReparacionesFactibles_t2"
 ) if restricciones_activas[11] else None
 '''
-La cantidad de fallas reparadas en cada período no puede superar las fallas nuevas ni aquellas pendientes de reparación de períodos anteriores.
+La cantidad de fallas reparadas en cada período no puede superar las fallas disponibles (nuevas + pendientes de reparación de períodos anteriores).
 '''
 
 R12 = model.addConstrs(
@@ -795,5 +799,90 @@ def generar_graficos_desde_txt(ruta_txt: Path):
     print("Gráficos generados correctamente en:", carpeta)
 
 
+def generar_resumen(resultados: dict):
+    meses_nombres = {
+        1: "mayo", 2: "junio", 3: "julio", 4: "agosto",
+        5: "septiembre", 6: "octubre", 7: "noviembre", 8: "diciembre",
+        9: "enero", 10: "febrero", 11: "marzo", 12: "abril"
+    }
+    zonas_nombres = {1: "Maule", 2: "Biobío", 3: "Araucanía"}
+
+    print("RESUMEN DE RESULTADOS")
+
+    print(f"\nValor óptimo de la función objetivo: {model.ObjVal:,.2f}")
+
+    print("Biomasa residual final (mes 12) por zona:")
+    for i in conjuntos.i:
+        total = sum(
+            valor
+            for (j, ii, tt), valor in resultados["I"].items()
+            if ii == i and tt == 12
+        )
+        print(f"   {zonas_nombres[i]:15s}: {total:>12,.0f} kg")
+
+    print("Biomasa total procesada por zona (todo el año):")
+    for i in conjuntos.i:
+        total = sum(
+            valor
+            for (j, ii, tt), valor in resultados["Y"].items()
+            if ii == i
+        )
+        print(f"   {zonas_nombres[i]:15s}: {total:>12,.0f} kg")
+    print("Trabajadores:")
+    for i in conjuntos.i:
+        contratados = sum(
+            valor
+            for (ii, tt), valor in resultados["H"].items()
+            if ii == i
+        )
+        desvinculados = sum(
+            valor
+            for (ii, tt), valor in resultados["D"].items()
+            if ii == i
+        )
+        total_mes12 = resultados["W"].get((i, 12), 0)
+        print(f"   {zonas_nombres[i]:15s}:")
+        print(f"      Contratados totales  : {contratados:>5.0f}")
+        print(f"      Desvinculados totales: {desvinculados:>5.0f}")
+        print(f"      Disponibles mes 12   : {total_mes12:>5.0f}")
+
+    print("Chipeadoras compradas:")
+    for k in conjuntos.k:
+        total = sum(
+            valor
+            for (kk, tt), valor in resultados["Z"].items()
+            if kk == k
+        )
+        if total > 0:
+            print(f"   Tipo {k}: {total:>3.0f} unidades compradas en total")
+
+    total_compradas = sum(
+        valor for valor in resultados["Z"].values()
+    )
+    print(f"   {'Total':15s}: {total_compradas:>3.0f} unidades")
+
+    print("Flota total de chipeadoras al mes 12:")
+    for k in conjuntos.k:
+        total = parametros.N_k[k-1] + sum(
+            valor
+            for (kk, tt), valor in resultados["Z"].items()
+            if kk == k and tt <= 12
+        )
+        print(f"   Tipo {k}: {total:>3.0f} unidades")
+    print("Asignación promedio de chipeadoras por zona:")
+    for i in conjuntos.i:
+        total_anual = sum(
+            valor
+            for (k, ii, tt), valor in resultados["X"].items()
+            if ii == i
+        )
+        promedio = total_anual / 12
+        print(f"   {zonas_nombres[i]:15s}: {promedio:>5.1f} chipeadoras promedio/mes")
+
+    print("\n" + "=" * 70)
+
+
 if model.SolCount > 0:
+    resultados = leer_resultados_txt(output_path)
+    generar_resumen(resultados)
     generar_graficos_desde_txt(output_path)
