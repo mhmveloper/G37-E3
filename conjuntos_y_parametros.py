@@ -78,5 +78,5 @@ class Parametros:
         self.CF_it = [value_vector for value_vector in dataGetter.get_table_values("Costo_de_desvincular_trabajador", "C", conjuntos.i) if value_vector is not None]
         '''Costo de desvincular un trabajador en la zona i durante el mes t.'''
 
-        self.h_ji = [value_vector for value_vector in dataGetter.get_table_values("Penalizacion_biomasa_residual", "C", conjuntos.j) if value_vector is not None]
+        self.h_ji = [value_vector for value_vector in dataGetter.get_table_values("Penalizacion_biomasa_residual", "E", conjuntos.j) if value_vector is not None]
         '''Penalización por kg de biomasa residual tipo j remanente en la zona i (ponderada por el riesgo de incendio de la zona respectiva)'''
