@@ -1,10 +1,29 @@
-import gurobipy as gp
 from data_getter import DataGetter
+import enum
 
 # Preparación de datos
 
-dataPath = "datos.xlsx"
+dataPath = "datos/datos.xlsx"
 dataGetter = DataGetter(dataPath)
+
+class ParametrosEnum(enum.Enum):
+    N = "N_k"
+    PC = "PC_k"
+    Cap = "Cap_k"
+    TT = "TT_i"
+    delta = "delta_k"
+    L = "L_i"
+    CO = "CO_kt"
+    CT = "CT_it"
+    CR = "CR_kf"
+    alpha = "alpha_kf"
+    G = "G_jit"
+    w = "w_ji"
+    P = "P_it"
+    ST = "ST_it"
+    CC = "CC_it"
+    CF = "CF_it"
+    h = "h_ji"
 
 class Conjuntos:
     def __init__(self):
@@ -80,3 +99,28 @@ class Parametros:
 
         self.h_ji = [value_vector for value_vector in dataGetter.get_table_values("Penalizacion_biomasa_residual", "E", conjuntos.j) if value_vector is not None]
         '''Penalización por kg de biomasa residual tipo j remanente en la zona i (ponderada por el riesgo de incendio de la zona respectiva)'''
+
+    def change_parameter_scale(self, parameter_name: ParametrosEnum, scale_factor: float):
+        '''
+        Cambia la escala de un parámetro multiplicándolo por un factor dado.
+        '''
+        def scale_value(value):
+            if isinstance(value, list):
+                return [scale_value(item) for item in value]
+            if isinstance(value, (int, float)):
+                return value * scale_factor
+            try:
+                numeric_value = float(value)
+                return numeric_value * scale_factor
+            except (TypeError, ValueError):
+                return value
+
+        if hasattr(self, parameter_name.value):
+            parameter = getattr(self, parameter_name.value)
+            if isinstance(parameter, list):
+                scaled_parameter = [scale_value(value) for value in parameter]
+                setattr(self, parameter_name.value, scaled_parameter)
+            else:
+                print(f"Error: El parámetro '{parameter_name}' no es una lista y no se puede escalar.")
+        else:
+            print(f"Error: El parámetro '{parameter_name}' no existe en la clase Parametros.")
